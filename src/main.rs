@@ -135,7 +135,7 @@ fn main() {
             return false;
         }
 
-        let result = smoosh(perf, (&sign[0], sign_indices[0][0] - 1), (&sign[1], sign_indices[1][0] - 1), (&sign[2], sign_indices[2][0] - 1), (&sign[3], sign_indices[3][0] - 1), &char_random_hashes);
+        let result = smoosh((&sign[0], sign_indices[0][0] - 1), (&sign[1], sign_indices[1][0] - 1), (&sign[2], sign_indices[2][0] - 1), (&sign[3], sign_indices[3][0] - 1), &char_random_hashes);
 
         let result_instant = Instant::now();
 
@@ -182,7 +182,7 @@ fn main() {
         println!("Question 4: {}", text[3]);
         println!();
 
-        let hash = smoosh(false, (&text[0], result[0][0] - 1), (&text[1], result[1][0] - 1), (&text[2], result[2][0] - 1), (&text[3], result[3][0] - 1), &char_random_hashes);
+        let hash = smoosh((&text[0], result[0][0] - 1), (&text[1], result[1][0] - 1), (&text[2], result[2][0] - 1), (&text[3], result[3][0] - 1), &char_random_hashes);
         println!("Correct Hash: {}", hex(hash));
     }
     else {
@@ -191,50 +191,15 @@ fn main() {
 }
 
 
-fn smoosh(perf: bool, line_1: (&str, u8), line_2: (&str, u8), line_3: (&str, u8), line_4: (&str, u8), char_random_hashes: &[String]) -> Vec<u8> {
+fn smoosh(line_1: (&str, u8), line_2: (&str, u8), line_3: (&str, u8), line_4: (&str, u8), char_random_hashes: &[String]) -> Vec<u8> {
     if line_1.0.len() == 0 || line_2.0.len() == 0 || line_3.0.len() == 0 || line_4.0.len() == 0 {
         return vec![];
     }
-
-    let start_instant = Instant::now();
-
-    /*
-    let b1 = line_1.0.as_bytes();
-    let b2 = line_2.0.as_bytes();
-    let b3 = line_3.0.as_bytes();
-    let b4 = line_4.0.as_bytes();
-     */
-
-    let bytes_instant = Instant::now();
-
-    /*
-    let mut random = Random::new();
-
-    random.set_seed(b1[0] as i64);
-    let rand_1 = random.next_int(0xFFFFFF);
-    random.set_seed(b2[0] as i64);
-    let rand_2 = random.next_int(0xFFFFFF);
-    random.set_seed(b3[0] as i64);
-    let rand_3 = random.next_int(0xFFFFFF);
-    random.set_seed(b4[0] as i64);
-    let rand_4 = random.next_int(0xFFFFFF);
-    */
-
-    let rand_instant = Instant::now();
-
-    /*
-    let rand_1_string = format!("{}", rand_1);
-    let rand_2_string = format!("{}", rand_2);
-    let rand_3_string = format!("{}", rand_3);
-    let rand_4_string = format!("{}", rand_4);
-    */
 
     let rand_1_string = &char_random_hashes[line_1.1 as usize];
     let rand_2_string = &char_random_hashes[line_2.1 as usize];
     let rand_3_string = &char_random_hashes[line_3.1 as usize];
     let rand_4_string = &char_random_hashes[line_4.1 as usize];
-
-    let rand_string_instant = Instant::now();
 
     let mut s: String = String::with_capacity(
         line_1.0.len() +
@@ -256,27 +221,7 @@ fn smoosh(perf: bool, line_1: (&str, u8), line_2: (&str, u8), line_3: (&str, u8)
     s = s + line_4.0;
     s = s + &rand_4_string;
 
-    let string_instant = Instant::now();
-
     let hash = get_hash(&s);
-
-    let hash_instant = Instant::now();
-
-    if perf {
-        let bytes_time = bytes_instant.duration_since(start_instant).as_nanos();
-        let rand_time = rand_instant.duration_since(bytes_instant).as_nanos();
-        let rand_string_time = rand_string_instant.duration_since(rand_instant).as_nanos();
-        let string_time = string_instant.duration_since(rand_string_instant).as_nanos();
-        let hash_time = hash_instant.duration_since(string_instant).as_nanos();
-
-        println!();
-        println!("bytes_time: {}ns", bytes_time);
-        println!("rand_time: {}ns", rand_time);
-        println!("rand_string_time: {}ns", rand_string_time);
-        println!("string_time: {}ns", string_time);
-        println!("hash_time: {}ns", hash_time);
-        println!()
-    }
 
     hash
 }
