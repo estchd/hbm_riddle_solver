@@ -102,17 +102,32 @@ fn main() {
         .map(|hash| hexhex::decode(hash).unwrap())
         .collect();
 
+    let char_random_hashes = allowed_chars
+        .iter()
+        .map(|char| {
+            let char_string = format!("{}", char);
+            let bytes = char_string.as_bytes();
+
+            let mut random = Random::new();
+            random.set_seed(bytes[0] as i64);
+
+            let random_value = random.next_int(0xFFFFFF);
+
+            format!("{}", random_value)
+        })
+        .collect::<Vec<String>>();
+
     let sign_iterator = SignIterator::new(allowed_chars.len() as u8);
 
     let index: AtomicU128 = AtomicU128::new(0);
 
-    let result = sign_iterator.par_bridge().into_par_iter().find_first(|sign| {
+    let result = sign_iterator.par_bridge().into_par_iter().find_first(|sign_indices| {
         let current_index = index.fetch_add(1, Ordering::Relaxed);
         let perf = current_index % 1000000 == 0;
 
         let start_instant = Instant::now();
 
-        let sign = generate(sign, &allowed_chars);
+        let sign = generate(sign_indices, &allowed_chars);
 
         let sign_instant = Instant::now();
 
@@ -120,7 +135,7 @@ fn main() {
             return false;
         }
 
-        let result = smoosh(perf, &sign[0], &sign[1], &sign[2], &sign[3]);
+        let result = smoosh(perf, (&sign[0], sign_indices[0][0] - 1), (&sign[1], sign_indices[1][0] - 1), (&sign[2], sign_indices[2][0] - 1), (&sign[3], sign_indices[3][0] - 1), &char_random_hashes);
 
         let result_instant = Instant::now();
 
@@ -167,7 +182,7 @@ fn main() {
         println!("Question 4: {}", text[3]);
         println!();
 
-        let hash = smoosh(false, &text[0], &text[1], &text[2], &text[3]);
+        let hash = smoosh(false, (&text[0], result[0][0] - 1), (&text[1], result[1][0] - 1), (&text[2], result[2][0] - 1), (&text[3], result[3][0] - 1), &char_random_hashes);
         println!("Correct Hash: {}", hex(hash));
     }
     else {
@@ -176,20 +191,23 @@ fn main() {
 }
 
 
-fn smoosh(perf: bool, line_1: &str, line_2: &str, line_3: &str, line_4: &str) -> Vec<u8> {
-    if line_1.len() == 0 || line_2.len() == 0 || line_3.len() == 0 || line_4.len() == 0 {
+fn smoosh(perf: bool, line_1: (&str, u8), line_2: (&str, u8), line_3: (&str, u8), line_4: (&str, u8), char_random_hashes: &[String]) -> Vec<u8> {
+    if line_1.0.len() == 0 || line_2.0.len() == 0 || line_3.0.len() == 0 || line_4.0.len() == 0 {
         return vec![];
     }
 
     let start_instant = Instant::now();
 
-    let b1 = line_1.as_bytes();
-    let b2 = line_2.as_bytes();
-    let b3 = line_3.as_bytes();
-    let b4 = line_4.as_bytes();
+    /*
+    let b1 = line_1.0.as_bytes();
+    let b2 = line_2.0.as_bytes();
+    let b3 = line_3.0.as_bytes();
+    let b4 = line_4.0.as_bytes();
+     */
 
     let bytes_instant = Instant::now();
 
+    /*
     let mut random = Random::new();
 
     random.set_seed(b1[0] as i64);
@@ -200,35 +218,58 @@ fn smoosh(perf: bool, line_1: &str, line_2: &str, line_3: &str, line_4: &str) ->
     let rand_3 = random.next_int(0xFFFFFF);
     random.set_seed(b4[0] as i64);
     let rand_4 = random.next_int(0xFFFFFF);
+    */
 
     let rand_instant = Instant::now();
 
+    /*
     let rand_1_string = format!("{}", rand_1);
     let rand_2_string = format!("{}", rand_2);
     let rand_3_string = format!("{}", rand_3);
     let rand_4_string = format!("{}", rand_4);
+    */
+
+    let rand_1_string = &char_random_hashes[line_1.1 as usize];
+    let rand_2_string = &char_random_hashes[line_2.1 as usize];
+    let rand_3_string = &char_random_hashes[line_3.1 as usize];
+    let rand_4_string = &char_random_hashes[line_4.1 as usize];
+
+    if perf {
+        println!();
+        println!("rand 1: {}", rand_1_string);
+        println!("rand 2: {}", rand_2_string);
+        println!("rand 3: {}", rand_3_string);
+        println!("rand 4: {}", rand_4_string);
+        println!();
+    }
 
     let rand_string_instant = Instant::now();
 
     let mut s: String = String::with_capacity(
-        line_1.len() +
-            line_2.len() +
-            line_3.len() +
-            line_4.len() +
+        line_1.0.len() +
+            line_2.0.len() +
+            line_3.0.len() +
+            line_4.0.len() +
             rand_1_string.len() +
             rand_2_string.len() +
             rand_3_string.len() +
             rand_4_string.len()
     );
 
-    s = s + line_1;
+    s = s + line_1.0;
     s = s + &rand_1_string;
-    s = s + line_2;
+    s = s + line_2.0;
     s = s + &rand_2_string;
-    s = s + line_3;
+    s = s + line_3.0;
     s = s + &rand_3_string;
-    s = s + line_4;
+    s = s + line_4.0;
     s = s + &rand_4_string;
+
+    if perf {
+        println!();
+        println!("string: {}", s);
+        println!();
+    }
 
     let string_instant = Instant::now();
 
