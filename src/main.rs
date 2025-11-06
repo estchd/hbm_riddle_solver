@@ -234,15 +234,6 @@ fn smoosh(perf: bool, line_1: (&str, u8), line_2: (&str, u8), line_3: (&str, u8)
     let rand_3_string = &char_random_hashes[line_3.1 as usize];
     let rand_4_string = &char_random_hashes[line_4.1 as usize];
 
-    if perf {
-        println!();
-        println!("rand 1: {}", rand_1_string);
-        println!("rand 2: {}", rand_2_string);
-        println!("rand 3: {}", rand_3_string);
-        println!("rand 4: {}", rand_4_string);
-        println!();
-    }
-
     let rand_string_instant = Instant::now();
 
     let mut s: String = String::with_capacity(
@@ -264,12 +255,6 @@ fn smoosh(perf: bool, line_1: (&str, u8), line_2: (&str, u8), line_3: (&str, u8)
     s = s + &rand_3_string;
     s = s + line_4.0;
     s = s + &rand_4_string;
-
-    if perf {
-        println!();
-        println!("string: {}", s);
-        println!();
-    }
 
     let string_instant = Instant::now();
 
