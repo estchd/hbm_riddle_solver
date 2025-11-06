@@ -102,67 +102,6 @@ fn main() {
         .map(|hash| hexhex::decode(hash).unwrap())
         .collect();
 
-    /*
-    for i in 0..=0xFFu8 {
-        let vec = vec![i];
-
-        let string_3 = hex(&vec).to_string();
-
-        let string_1 = format!("{:02x}", i);
-
-        let int_byte = i as i32;
-        let final_byte = (int_byte & 0xFF) + 256;
-        let string_2 = format!("{:x}", final_byte)[1..].to_string();
-
-        if string_1 != string_2 {
-            panic!("Not equal: i: {}, string_1: {}, string_2: {}", i, string_1, string_2);
-        }
-
-        if string_1 != string_3 {
-            panic!("Not equal: i: {}, string_1: {}, string_3: {}", i, string_1, string_3);
-        }
-    }
-    */
-    /*
-    for i in 0..allowed_chars.len() {
-        let mut rand_1 = Random::new();
-        let mut rand_2 = Random::new();
-
-        let string_1 = format!("{}", &allowed_chars[i]);
-
-        let bytes_1 = string_1.as_bytes();
-
-        let byte_1 = bytes_1[0];
-
-        rand_1.set_seed(byte_1 as i64);
-        rand_2.set_seed(byte_1 as i64);
-
-        rand_1.next_int(0xFFFFFF);
-        rand_2.next_int(0xFFFFFF);
-
-        for l in 0..allowed_chars.len() {
-            let string_2 = format!("{}", &allowed_chars[l]);
-
-            let bytes_2 = string_2.as_bytes();
-
-            let byte_2 = bytes_2[0];
-
-            rand_1.set_seed(byte_2 as i64);
-
-            let value = rand_2.next_int(0xFFFFFF) as i64 + byte_2 as i64;
-            rand_2.set_seed(value);
-            rand_2.set_seed(byte_2 as i64);
-
-            let result_1 = rand_1.next_int(0xFFFFFF);
-            let result_2 = rand_2.next_int(0xFFFFFF);
-
-            if result_1 != result_2 {
-                panic!("Methods are not equal: short: {}, long: {}", result_1, result_2);
-            }
-        }
-    }
-    */
-
     let sign_iterator = SignIterator::new(allowed_chars.len() as u8);
 
     let index: AtomicU128 = AtomicU128::new(0);
