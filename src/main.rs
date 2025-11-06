@@ -238,39 +238,58 @@ fn main() {
 
 
 fn smoosh(perf: bool, line_1: &str, line_2: &str, line_3: &str, line_4: &str) -> Vec<u8> {
-    let mut s: String = "".to_string();
+    if line_1.len() == 0 || line_2.len() == 0 || line_3.len() == 0 || line_4.len() == 0 {
+        return vec![];
+    }
 
     let start_instant = Instant::now();
-
-    let mut random = Random::new();
 
     let b1 = line_1.as_bytes();
     let b2 = line_2.as_bytes();
     let b3 = line_3.as_bytes();
     let b4 = line_4.as_bytes();
 
-    if b1.len() == 0 || b2.len() == 0 || b3.len() == 0 || b4.len() == 0 {
-        return vec![];
-    }
+    let bytes_instant = Instant::now();
+
+    let mut random = Random::new();
+
+    random.set_seed(b1[0] as i64);
+    let rand_1 = random.next_int(0xFFFFFF);
+    random.set_seed(b2[0] as i64);
+    let rand_2 = random.next_int(0xFFFFFF);
+    random.set_seed(b3[0] as i64);
+    let rand_3 = random.next_int(0xFFFFFF);
+    random.set_seed(b4[0] as i64);
+    let rand_4 = random.next_int(0xFFFFFF);
+
+    let rand_instant = Instant::now();
+
+    let rand_1_string = format!("{}", rand_1);
+    let rand_2_string = format!("{}", rand_2);
+    let rand_3_string = format!("{}", rand_3);
+    let rand_4_string = format!("{}", rand_4);
+
+    let rand_string_instant = Instant::now();
+
+    let mut s: String = String::with_capacity(
+        line_1.len() +
+            line_2.len() +
+            line_3.len() +
+            line_4.len() +
+            rand_1_string.len() +
+            rand_2_string.len() +
+            rand_3_string.len() +
+            rand_4_string.len()
+    );
 
     s = s + line_1;
-    random.set_seed(b1[0] as i64);
-    s = s + &format!("{}", random.next_int(0xFFFFFF));
+    s = s + &rand_1_string;
     s = s + line_2;
-    //let value = random.next_int(0xFFFFFF) as i64 + b2[0] as i64;
-    //random.set_seed(value);
-    random.set_seed(b2[0] as i64);
-    s = s + &format!("{}", random.next_int(0xFFFFFF));
+    s = s + &rand_2_string;
     s = s + line_3;
-    //let value = random.next_int(0xFFFFFF) as i64 + b3[0] as i64;
-    //random.set_seed(value);
-    random.set_seed(b3[0] as i64);
-    s = s + &format!("{}", random.next_int(0xFFFFFF));
+    s = s + &rand_3_string;
     s = s + line_4;
-    //let value = random.next_int(0xFFFFFF) as i64 + b4[0] as i64;
-    //random.set_seed(value);
-    random.set_seed(b4[0] as i64);
-    s = s + &format!("{}", random.next_int(0xFFFFFF));
+    s = s + &rand_4_string;
 
     let string_instant = Instant::now();
 
@@ -279,10 +298,16 @@ fn smoosh(perf: bool, line_1: &str, line_2: &str, line_3: &str, line_4: &str) ->
     let hash_instant = Instant::now();
 
     if perf {
-        let string_time = string_instant.duration_since(start_instant).as_nanos();
+        let bytes_time = bytes_instant.duration_since(start_instant).as_nanos();
+        let rand_time = rand_instant.duration_since(bytes_instant).as_nanos();
+        let rand_string_time = rand_string_instant.duration_since(rand_instant).as_nanos();
+        let string_time = string_instant.duration_since(rand_string_instant).as_nanos();
         let hash_time = hash_instant.duration_since(string_instant).as_nanos();
 
         println!();
+        println!("bytes_time: {}ns", bytes_time);
+        println!("rand_time: {}ns", rand_time);
+        println!("rand_string_time: {}ns", rand_string_time);
         println!("string_time: {}ns", string_time);
         println!("hash_time: {}ns", hash_time);
         println!()
