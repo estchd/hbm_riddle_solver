@@ -44,6 +44,7 @@ static LINE_OPTIONS: [Option<&[&'static str]>; 4] = [
     ])
 ];
 
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn generate(current: &[[u8; 15]; 4], allowed_chars: &NonEmpty<char>) -> [String; 4] {
     let mut strings: [String; 4] = [
         String::with_capacity(15),
@@ -67,7 +68,7 @@ fn generate(current: &[[u8; 15]; 4], allowed_chars: &NonEmpty<char>) -> [String;
     strings
 }
 
-
+#[cfg_attr(feature = "hotpath", hotpath::main(percentiles = [100]))]
 fn main() {
     let allowed_chars: NonEmpty<char> = NonEmpty::from_vec(ALLOWED_CHARS
         .chars()
@@ -94,28 +95,7 @@ fn main() {
     let sign_iterator = SignIterator::from_readable_config(allowed_chars.clone(), &LINE_OPTIONS, &LINE_CONSTANTS);
 
     let result = sign_iterator.par_bridge().into_par_iter().find_first(|sign_indices| {
-        let sign = generate(sign_indices, &allowed_chars);
-
-        if sign[0].len() == 0 || sign[1].len() == 0 || sign[2].len() == 0 || sign[3].len() == 0 {
-            return false;
-        }
-
-        let result = smoosh((&sign[0], sign_indices[0][0] - 1), (&sign[1], sign_indices[1][0] - 1), (&sign[2], sign_indices[2][0] - 1), (&sign[3], sign_indices[3][0] - 1), &char_random_hashes);
-
-        let mut found: bool = false;
-
-        if result.len() != possible_hashes[0].len() {
-            panic!("Invalid length: {}, expected: {}", result.len(), possible_hashes[0].len());
-        }
-
-        for possible_hash in &possible_hashes {
-            if &result == possible_hash {
-                found = true;
-                break;
-            }
-        }
-
-        return found;
+        check_solution(sign_indices, &allowed_chars, &possible_hashes, &char_random_hashes)
     });
 
     if let Some(result) = result {
@@ -137,42 +117,111 @@ fn main() {
     }
 }
 
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn check_solution(sign_indices: &[[u8; 15]; 4], allowed_chars: &NonEmpty<char>, possible_hashes: &Vec<Vec<u8>>, char_random_hashes: &Vec<String>) -> bool {
+    let sign = generate(sign_indices, &allowed_chars);
 
+    if sign[0].len() == 0 || sign[1].len() == 0 || sign[2].len() == 0 || sign[3].len() == 0 {
+        return false;
+    }
+
+    let result = smoosh((&sign[0], sign_indices[0][0] - 1), (&sign[1], sign_indices[1][0] - 1), (&sign[2], sign_indices[2][0] - 1), (&sign[3], sign_indices[3][0] - 1), &char_random_hashes);
+
+    let mut found: bool = false;
+
+    if result.len() != possible_hashes[0].len() {
+        panic!("Invalid length: {}, expected: {}", result.len(), possible_hashes[0].len());
+    }
+
+    for possible_hash in possible_hashes {
+        if &result == possible_hash {
+            found = true;
+            break;
+        }
+    }
+
+    found
+}
+
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn smoosh(line_1: (&str, u8), line_2: (&str, u8), line_3: (&str, u8), line_4: (&str, u8), char_random_hashes: &[String]) -> Vec<u8> {
     if line_1.0.len() == 0 || line_2.0.len() == 0 || line_3.0.len() == 0 || line_4.0.len() == 0 {
         return vec![];
     }
 
-    let rand_1_string = &char_random_hashes[line_1.1 as usize];
-    let rand_2_string = &char_random_hashes[line_2.1 as usize];
-    let rand_3_string = &char_random_hashes[line_3.1 as usize];
-    let rand_4_string = &char_random_hashes[line_4.1 as usize];
+    let rand_1_string: &str;
+    let rand_2_string: &str;
+    let rand_3_string: &str;
+    let rand_4_string: &str;
 
-    let mut s: String = String::with_capacity(
-        line_1.0.len() +
-            line_2.0.len() +
-            line_3.0.len() +
-            line_4.0.len() +
-            rand_1_string.len() +
-            rand_2_string.len() +
-            rand_3_string.len() +
-            rand_4_string.len()
-    );
+    #[cfg(feature = "hotpath")]
+    hotpath::measure_block!("riddle_solver::smoosh::char_random_hashes", {
+        rand_1_string = &char_random_hashes[line_1.1 as usize];
+        rand_2_string = &char_random_hashes[line_2.1 as usize];
+        rand_3_string = &char_random_hashes[line_3.1 as usize];
+        rand_4_string = &char_random_hashes[line_4.1 as usize];
+    });
 
-    s = s + line_1.0;
-    s = s + &rand_1_string;
-    s = s + line_2.0;
-    s = s + &rand_2_string;
-    s = s + line_3.0;
-    s = s + &rand_3_string;
-    s = s + line_4.0;
-    s = s + &rand_4_string;
+    #[cfg(not(feature = "hotpath"))]
+    {
+        rand_1_string = &char_random_hashes[line_1.1 as usize];
+        rand_2_string = &char_random_hashes[line_2.1 as usize];
+        rand_3_string = &char_random_hashes[line_3.1 as usize];
+        rand_4_string = &char_random_hashes[line_4.1 as usize];
+    }
 
-    let hash = get_hash(&s);
+    let mut s: String;
 
-    hash
+    #[cfg(not(feature = "hotpath"))]
+    {
+        s = String::with_capacity(
+            line_1.0.len() +
+                line_2.0.len() +
+                line_3.0.len() +
+                line_4.0.len() +
+                rand_1_string.len() +
+                rand_2_string.len() +
+                rand_3_string.len() +
+                rand_4_string.len()
+        );
+
+        s = s + line_1.0;
+        s = s + &rand_1_string;
+        s = s + line_2.0;
+        s = s + &rand_2_string;
+        s = s + line_3.0;
+        s = s + &rand_3_string;
+        s = s + line_4.0;
+        s = s + &rand_4_string;
+    }
+
+    #[cfg(feature = "hotpath")]
+    hotpath::measure_block!("riddle_solver::smoosh::input_string", {
+        s = String::with_capacity(
+            line_1.0.len() +
+                line_2.0.len() +
+                line_3.0.len() +
+                line_4.0.len() +
+                rand_1_string.len() +
+                rand_2_string.len() +
+                rand_3_string.len() +
+                rand_4_string.len()
+        );
+
+        s = s + line_1.0;
+        s = s + &rand_1_string;
+        s = s + line_2.0;
+        s = s + &rand_2_string;
+        s = s + line_3.0;
+        s = s + &rand_3_string;
+        s = s + line_4.0;
+        s = s + &rand_4_string;
+    });
+
+    get_hash(&s)
 }
 
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn get_hash(input: &str) -> Vec<u8> {
     sha2::Sha256::digest(input.as_bytes()).to_vec()
 }
