@@ -17,8 +17,6 @@ static HASHES: &'static [&'static str] = &[
     "31da6223a100ed348ceb3254ceab67c9cc102cb2a04ac24de0df3ef3479b1036"
 ];
 
-static TEST_HASH: &'static [u8] = &[0x41,0xde,0x5c,0x37,0x2b,0x05,0x89,0xbb,0xdb,0x80,0x57,0x1e,0x87,0xef,0xa9,0x5e,0xa9,0xe3,0x4b,0x0d,0x74,0xc6,0x00,0x5b,0x8e,0xab,0x49,0x5b,0x7a,0xfd,0x99,0x94];
-
 static ALLOWED_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz -";
 
 static LINE_CONSTANTS: [Option<&'static str>; 4] = [
@@ -176,7 +174,6 @@ fn smoosh(line_1: (&str, u8), line_2: (&str, u8), line_3: (&str, u8), line_4: (&
 }
 
 fn get_hash(input: &str) -> Vec<u8> {
-    return TEST_HASH.to_vec();
     sha2::Sha256::digest(input.as_bytes()).to_vec()
 }
 
