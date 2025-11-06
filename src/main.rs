@@ -17,7 +17,7 @@ static HASHES: &'static [&'static str] = &[
     "31da6223a100ed348ceb3254ceab67c9cc102cb2a04ac24de0df3ef3479b1036"
 ];
 
-static ALLOWED_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz ";
+static ALLOWED_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz -";
 
 static LINE_CONSTANTS: [Option<&'static str>; 4] = [
     None,
@@ -27,12 +27,23 @@ static LINE_CONSTANTS: [Option<&'static str>; 4] = [
 ];
 
 static LINE_OPTIONS: [Option<&[&'static str]>; 4] = [
-    Some(&["pumpjack", "celestium industries", "celestiumindustries"]),
+    Some(&["mountains", "an echo", "echo", "pumpjack", "celestium industries", "celestiumindustries"]),
+    None,
+    //Some(&["sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds", "snakeeyes", "snake eyes", "muonsandboson", "muonsandhiggsboson", "astatinepolonium", "poloniumastatine", "astatine and polonium", "polonium and astatine", "polonium", "astatine", "bosons", "higgs boson", "boson", "higgs bosons", "scalar bosons", "muons", "muon", "higgsboson", "higgsbosons", "scalarbosons", "extreme triples", "extremetriples"]),
     //None,
-    Some(&["snakeeyes", "snake eyes", "muonsandboson", "muonsandhiggsboson", "astatinepolonium", "poloniumastatine", "astatine and polonium", "polonium and astatine", "polonium", "astatine", "bosons", "higgs boson", "boson", "higgs bosons", "scalar bosons", "muons", "muon", "higgsboson", "higgsbosons", "scalarbosons", "extreme triples", "extremetriples"]),
-    Some(&["gerald", "starmetal", "lunar mining ship", "geraldtheconstruction", "gerald the construction", "tom", "microbe", "a microbe", "taint"]),
+    Some(&["euphemia li britannia", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil", "gerald", "starmetal", "lunar mining ship", "geraldtheconstruction", "gerald the construction", "tom", "microbe", "a microbe", "taint"]),
     //None,
     Some(&[
+        "cigarette smoke",
+        "cigar smoke",
+        "tobacco smoke",
+        "smoke",
+        "fire",
+        "desh",
+        "australium",
+        "digamma",
+        "radiation",
+        "balefire",
         "proton",
         "alpha particle",
         "neutron",
