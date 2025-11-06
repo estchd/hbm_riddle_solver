@@ -1,78 +1,166 @@
 #![feature(integer_atomics)]
 #![feature(duration_millis_float)]
 
+mod sign_iterator;
+
 use std::ops::{BitAnd, BitXor};
-use std::sync::atomic::{AtomicI64, AtomicU128, Ordering};
-use std::time::{Instant};
+use std::sync::atomic::{AtomicI64, Ordering};
 use hexhex::hex;
+use nonempty::NonEmpty;
 use rand::Rng;
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 use sha2::Digest;
+use crate::sign_iterator::{SignIterator};
 
 static HASHES: &'static [&'static str] = &[
     "41de5c372b0589bbdb80571e87efa95ea9e34b0d74c6005b8eab495b7afd9994",
     "31da6223a100ed348ceb3254ceab67c9cc102cb2a04ac24de0df3ef3479b1036"
 ];
 
-// 15 Symbols per line
-
 static ALLOWED_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz ";
 
-struct SignIterator {
-    current: [[u8; 15]; 4],
-    num_allowed_chars: u8,
-    finished: bool,
-}
+static LINE_CONSTANTS: [Option<&'static str>; 4] = [
+    None,
+    None,
+    None,
+    None
+];
 
-impl SignIterator {
-    fn new(num_allowed_chars: u8) -> Self {
-        Self {
-            current: [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; 4],
-            num_allowed_chars,
-            finished: false,
-        }
-    }
+static LINE_OPTIONS: [Option<&[&'static str]>; 4] = [
+    Some(&["pumpjack", "celestium industries", "celestiumindustries"]),
+    //None,
+    Some(&["snakeeyes", "snake eyes", "muonsandboson", "muonsandhiggsboson", "astatinepolonium", "poloniumastatine", "astatine and polonium", "polonium and astatine", "polonium", "astatine", "bosons", "higgs boson", "boson", "higgs bosons", "scalar bosons", "muons", "muon", "higgsboson", "higgsbosons", "scalarbosons", "extreme triples", "extremetriples"]),
+    Some(&["gerald", "starmetal", "lunar mining ship", "geraldtheconstruction", "gerald the construction", "tom", "microbe", "a microbe", "taint"]),
+    //None,
+    Some(&[
+        "proton",
+        "alpha particle",
+        "neutron",
+        "ghiorsium",
+        "liquid hydrogen",
+        "a",
+        "hydrogen",
+        "helium",
+        "lithium",
+        "beryllium",
+        "boron",
+        "carbon",
+        "nitrogen",
+        "oxygen",
+        "fluorine",
+        "neon",
+        "sodium",
+        "magnesium",
+        "aluminium",
+        "silicon",
+        "phosphorus",
+        "sulfur",
+        "chlorine",
+        "argon",
+        "potassium",
+        "calcium",
+        "scandium",
+        "titanium",
+        "vanadium",
+        "chromium",
+        "manganese",
+        "iron",
+        "cobalt",
+        "nickel",
+        "copper",
+        "zinc",
+        "gallium",
+        "germanium",
+        "arsenic",
+        "selenium",
+        "bromine",
+        "krypton",
+        "rubidium",
+        "strontium",
+        "yttrium",
+        "zirconium",
+        "niobium",
+        "molybdenum",
+        "technetium",
+        "ruthenium",
+        "rhodium",
+        "palladium",
+        "silver",
+        "cadmium",
+        "indium",
+        "tin",
+        "antimony",
+        "tellurium",
+        "iodine",
+        "xenon",
+        "caesium",
+        "barium",
+        "lanthanum",
+        "cerium",
+        "praseodymium",
+        "neodymium",
+        "promethium",
+        "samarium",
+        "europium",
+        "gadolinium",
+        "terbium",
+        "dysprosium",
+        "holmium",
+        "erbium",
+        "thulium",
+        "ytterbium",
+        "lutetium",
+        "hafnium",
+        "tantalum",
+        "tungsten",
+        "rhenium",
+        "osmium",
+        "iridium",
+        "platinum",
+        "gold",
+        "mercury",
+        "thallium",
+        "lead",
+        "bismuth",
+        "polonium",
+        "astatine",
+        "radon",
+        "francium",
+        "radium",
+        "actinium",
+        "thorium",
+        "protactinium",
+        "uranium",
+        "neptunium",
+        "plutonium",
+        "americium",
+        "curium",
+        "berkelium",
+        "californium",
+        "einsteinium",
+        "fermium",
+        "mendelevium",
+        "nobelium",
+        "lawrencium",
+        "rutherfordium",
+        "dubnium",
+        "seaborgium",
+        "bohrium",
+        "hassium",
+        "meitnerium",
+        "darmstadtium",
+        "roentgenium",
+        "copernicium",
+        "nihonium",
+        "flerovium",
+        "moscovium",
+        "livermorium",
+        "tennessine",
+        "oganesson"
+    ])
+];
 
-    fn iterate(&mut self, line: usize, index: usize) -> bool {
-        if line == 3 && index == 15 {
-            return true;
-        }
-
-        self.current[line][index] = self.current[line][index] + 1;
-
-        if self.current[line][index] > self.num_allowed_chars {
-            return if index == 15 {
-                self.current[line] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-
-                self.iterate(line + 1, 0)
-            } else {
-                self.current[line][index] = 1;
-
-                self.iterate(line, index + 1)
-            }
-        }
-
-        false
-    }
-}
-
-impl Iterator for SignIterator {
-    type Item = [[u8; 15]; 4];
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.finished {
-            return None;
-        }
-
-        let current = self.current;
-
-        self.finished = self.iterate(0, 0);
-
-        Some(current)
-    }
-}
-
-fn generate(current: &[[u8; 15]; 4], allowed_chars: &[char]) -> [String; 4] {
+fn generate(current: &[[u8; 15]; 4], allowed_chars: &NonEmpty<char>) -> [String; 4] {
     let mut strings: [String; 4] = [
         String::with_capacity(15),
         String::with_capacity(15),
@@ -97,7 +185,9 @@ fn generate(current: &[[u8; 15]; 4], allowed_chars: &[char]) -> [String; 4] {
 
 
 fn main() {
-    let allowed_chars = ALLOWED_CHARS.chars().collect::<Vec<char>>();
+    let allowed_chars: NonEmpty<char> = NonEmpty::from_vec(ALLOWED_CHARS
+        .chars()
+        .collect::<Vec<char>>()).unwrap();
     let possible_hashes: Vec<Vec<u8>> = HASHES.iter()
         .map(|hash| hexhex::decode(hash).unwrap())
         .collect();
@@ -117,27 +207,16 @@ fn main() {
         })
         .collect::<Vec<String>>();
 
-    let sign_iterator = SignIterator::new(allowed_chars.len() as u8);
-
-    let index: AtomicU128 = AtomicU128::new(0);
+    let sign_iterator = SignIterator::from_readable_config(allowed_chars.clone(), &LINE_OPTIONS, &LINE_CONSTANTS);
 
     let result = sign_iterator.par_bridge().into_par_iter().find_first(|sign_indices| {
-        let current_index = index.fetch_add(1, Ordering::Relaxed);
-        let perf = current_index % 1000000 == 0;
-
-        let start_instant = Instant::now();
-
         let sign = generate(sign_indices, &allowed_chars);
-
-        let sign_instant = Instant::now();
 
         if sign[0].len() == 0 || sign[1].len() == 0 || sign[2].len() == 0 || sign[3].len() == 0 {
             return false;
         }
 
         let result = smoosh((&sign[0], sign_indices[0][0] - 1), (&sign[1], sign_indices[1][0] - 1), (&sign[2], sign_indices[2][0] - 1), (&sign[3], sign_indices[3][0] - 1), &char_random_hashes);
-
-        let result_instant = Instant::now();
 
         let mut found: bool = false;
 
@@ -150,22 +229,6 @@ fn main() {
                 found = true;
                 break;
             }
-        }
-
-        let check_instant = Instant::now();
-
-        if perf {
-            let sign_time = sign_instant.duration_since(start_instant).as_nanos();
-            let result_time = result_instant.duration_since(sign_instant).as_nanos();
-            let check_time = check_instant.duration_since(result_instant).as_nanos();
-
-            println!();
-            println!("sign_time: {}ns", sign_time);
-            println!("result_time: {}ns", result_time);
-            println!("check_time: {}ns", check_time);
-            println!()
-
-            //println!("{}", current_index);
         }
 
         return found;
