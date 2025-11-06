@@ -27,9 +27,10 @@ static LINE_CONSTANTS: [Option<&'static str>; 4] = [
 ];
 
 static LINE_OPTIONS: [Option<&[&'static str]>; 4] = [
-    Some(&["mountains", "an echo", "echo", "pumpjack", "celestium industries", "celestiumindustries"]),
     None,
-    //Some(&["sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds", "snakeeyes", "snake eyes", "muonsandboson", "muonsandhiggsboson", "astatinepolonium", "poloniumastatine", "astatine and polonium", "polonium and astatine", "polonium", "astatine", "bosons", "higgs boson", "boson", "higgs bosons", "scalar bosons", "muons", "muon", "higgsboson", "higgsbosons", "scalarbosons", "extreme triples", "extremetriples"]),
+    //Some(&["mountains", "an echo", "echo", "pumpjack", "celestium industries", "celestiumindustries"]),
+    //None,
+    Some(&["sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds", "snakeeyes", "snake eyes", "muonsandboson", "muonsandhiggsboson", "astatinepolonium", "poloniumastatine", "astatine and polonium", "polonium and astatine", "polonium", "astatine", "bosons", "higgs boson", "boson", "higgs bosons", "scalar bosons", "muons", "muon", "higgsboson", "higgsbosons", "scalarbosons", "extreme triples", "extremetriples"]),
     //None,
     Some(&["euphemia li britannia", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil", "gerald", "starmetal", "lunar mining ship", "geraldtheconstruction", "gerald the construction", "tom", "microbe", "a microbe", "taint"]),
     //None,
