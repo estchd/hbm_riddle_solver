@@ -279,6 +279,7 @@ impl SignIterator {
 		]
 	}
 
+	#[cfg(feature = "split")]
 	pub fn split<const CHUNKS: usize>(self) -> [Self; CHUNKS] {
 		let mut cloned: Vec<Self> = Vec::with_capacity(CHUNKS);
 

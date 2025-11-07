@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 use hexhex::hex;
 use nonempty::NonEmpty;
 use rand::Rng;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 use sha2::Digest;
 use crate::sign_iterator::{SignIterator};
 
@@ -26,29 +26,29 @@ static HASHES: &'static [&'static str] = &[
 
 static ALLOWED_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz -#'123456789_,.";
 
-/*
 static LINE_CONSTANTS: [Option<&'static str>; 4] = [
     None,
     None,
     None,
     None
 ];
- */
 
-//static ALL_LINE_OPTIONS: &'static [&'static str] = &["the void", "void", "popbub", "hoofington", "sharon", "flim flam industries", "enolagay", "enola gay", "lildip", "lil dip", "duchess gambit","duchessgambit", "hoboy03new", "celestium industries", "free electron laser", "sound", "air", "scream", "voice", "screen", "fourier", "ears", "ear", "music", "sound", "current", "voltage", "separation of isotopes by laser exitation", "chaos", "starcontrol", "radar", "numbernine", "dyx", "minelittlepony", "pisp", "tile.obj_tester.name", "exposure chamber", "fel", "free electron laser", "maxwell", "atmosphere", "Doctor Schrabauer", "DrNostalgia", "ffi-brand cigarette", "matter", "the world", "world", "mask man", "maskman", "balls-o-tron", "radon", "isotopes", "orbitals", "electrons", "atoms", "amber", "ambers", "flame", "balefire", "smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire", "who", "java", "the author", "author", "the bobcat", "bob", "electrons", "photons", "decoder", "time", "seed", "hash", "you", "entropy", "operator", "nature", "scientist", "the observer", "observer", "euphemia li britannia", "digamma", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil", "capitalism", "smog", "xrays", "x-ray", "xray", "x-rays", "electromagnetic", "electromagnetism", "infrared", "microwaves", "fallout", "decoy", "belief", "skybox", "faith", "ignorance", "illusion","radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds", "half-life scientists", "scientists", "you", "yourself", "mountains", "an echo", "echo", ];
-
-/*
-static LINE_OPTIONS: [Option<&[&'static str]>; 4] = [
-    //None,
-    Some(&["half-life scientists", "scientists", "you", "yourself", "mountains", "an echo", "echo"]),
-    //None,
-    Some(&["capitalism", "smog", "xrays", "x-ray", "xray", "x-rays", "electromagnetic", "electromagnetism", "infrared", "microwaves", "fallout", "decoy", "belief", "skybox", "faith", "ignorance", "illusion","radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds"]),
-    //None,
-    Some(&["who", "java", "the author", "author", "the bobcat", "bob", "electrons", "photons", "decoder", "time", "seed", "hash", "you", "entropy", "operator", "nature", "scientist", "the observer", "observer", "euphemia li britannia", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil"]),
-    //None,
-    Some(&["mask man", "maskman", "balls-o-tron", "radon", "isotopes", "orbitals", "electrons", "atoms", "amber", "ambers", "flame", "balefire", "smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire"])
+static DICTIONARY_LINES: [bool; 4] = [
+    true,
+    true,
+    true,
+    true
 ];
- */
+
+static ALL_LINE_OPTIONS: &'static [&'static str] = &["the void", "void", "popbub", "hoofington", "sharon", "flim flam industries", "enolagay", "enola gay", "lildip", "lil dip", "duchess gambit","duchessgambit", "hoboy03new", "celestium industries", "free electron laser", "sound", "air", "scream", "voice", "screen", "fourier", "ears", "ear", "music", "sound", "current", "voltage", "separation of isotopes by laser exitation", "chaos", "starcontrol", "radar", "numbernine", "dyx", "minelittlepony", "pisp", "tile.obj_tester.name", "exposure chamber", "fel", "free electron laser", "maxwell", "atmosphere", "Doctor Schrabauer", "DrNostalgia", "ffi-brand cigarette", "matter", "the world", "world", "mask man", "maskman", "balls-o-tron", "radon", "isotopes", "orbitals", "electrons", "atoms", "amber", "ambers", "flame", "balefire", "smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire", "who", "java", "the author", "author", "the bobcat", "bob", "electrons", "photons", "decoder", "time", "seed", "hash", "you", "entropy", "operator", "nature", "scientist", "the observer", "observer", "euphemia li britannia", "digamma", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil", "capitalism", "smog", "xrays", "x-ray", "xray", "x-rays", "electromagnetic", "electromagnetism", "infrared", "microwaves", "fallout", "decoy", "belief", "skybox", "faith", "ignorance", "illusion","radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds", "half-life scientists", "scientists", "you", "yourself", "mountains", "an echo", "echo", ];
+
+static LINE_OPTIONS: [&[&'static str]; 4] = [
+    &["half-life scientists", "scientists", "you", "yourself", "mountains", "an echo", "echo"],
+    &["capitalism", "smog", "xrays", "x-ray", "xray", "x-rays", "electromagnetic", "electromagnetism", "infrared", "microwaves", "fallout", "decoy", "belief", "skybox", "faith", "ignorance", "illusion","radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds"],
+    &["who", "java", "the author", "author", "the bobcat", "bob", "electrons", "photons", "decoder", "time", "seed", "hash", "you", "entropy", "operator", "nature", "scientist", "the observer", "observer", "euphemia li britannia", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil"],
+    &["soyuz", "obj_tester", "numbernine", "dyx", "minelittlepony", "pisp", "tile.obj_tester.name", "mask man", "maskman", "balls-o-tron", "radon", "isotopes", "orbitals", "electrons", "atoms", "amber", "ambers", "flame", "balefire", "smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire"]
+];
+
 
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn generate(current: &[[u8; 15]; 4], allowed_chars: &NonEmpty<u8>) -> [Vec<u8>; 4] {
@@ -158,22 +158,63 @@ fn main() {
 
             let random_value = random.next_int(0xFFFFFF);
 
-
-
             format!("{}", random_value).into_bytes()
         })
         .collect::<Vec<Vec<u8>>>();
 
-    let sign_iterator = SignIterator::from_readable_config(allowed_chars, &[None; 4], &[None; 4]);
-    //let sign_iterator = SignIterator::from_readable_config(allowed_chars, &options, &LINE_CONSTANTS);
+    let line_options: [&[&str]; 4];
 
-    let iterators = sign_iterator.split::<16>();
+    let mut all_options: Vec<&str> = Vec::new();
 
-    let result = iterators.into_par_iter().find_map_first(|mut iterator| {
+    for options in LINE_OPTIONS {
+        all_options.extend_from_slice(options);
+    }
+
+    #[cfg(feature = "combine_dictionary_options")]
+    {
+        line_options = [
+            all_options.as_slice(),
+            all_options.as_slice(),
+            all_options.as_slice(),
+            all_options.as_slice(),
+        ];
+    }
+
+    #[cfg(not(feature = "combine_dictionary_options"))]
+    {
+        line_options = LINE_OPTIONS;
+    }
+
+    let mut enabled_line_options: [Option<&[&str]>; 4] = [None; 4];
+
+    for i in 0..4 {
+        if DICTIONARY_LINES[i] {
+            enabled_line_options[i] = Some(&line_options[i]);
+        }
+    }
+
+    let sign_iterator: SignIterator;
+    sign_iterator = SignIterator::from_readable_config(allowed_chars, &enabled_line_options, &LINE_CONSTANTS);
+
+    let result: Option<[[u8; 15]; 4]>;
+
+    #[cfg(feature = "split")]
+    {
+        let iterators = sign_iterator.split::<16>();
+
+        result = iterators.into_par_iter().find_map_first(|mut iterator| {
             iterator.find(|sign_indices| {
+                check_solution(sign_indices, &allowed_chars_bytes, &possible_hashes, &char_random_hashes)
+            })
+        });
+    }
+
+    #[cfg(not(feature = "split"))]
+    {
+        result = sign_iterator.par_bridge().into_par_iter().find_first(|sign_indices| {
             check_solution(sign_indices, &allowed_chars_bytes, &possible_hashes, &char_random_hashes)
         })
-    });
+    }
 
     if let Some(result) = result {
         let text = generate(&result, &allowed_chars_bytes);

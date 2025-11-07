@@ -19,6 +19,8 @@ hotpath-alloc-self = ["hotpath/hotpath-alloc-self"]
 hotpath-off = ["hotpath/hotpath-off"]
 debug_hash = []
 filter_dictionary = []
+split = []
+combine_dictionary_options = []
 
 [profile.release]
 debug = true
