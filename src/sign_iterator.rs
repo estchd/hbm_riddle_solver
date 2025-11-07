@@ -257,6 +257,13 @@ impl SignIterator {
 				if self.lines[i].is_brute_force() && !self.lines[i].iterate(l) {
 					return false;
 				}
+
+				if l == 14 {
+					let IteratorLine::BruteForce { state, num_possible_chars: _ } = &mut self.lines[i]
+					else { panic!() };
+
+					*state = DEFAULT_BRUTE_FORCE_STATE;
+				}
 			}
 		}
 
@@ -298,7 +305,7 @@ impl SignIterator {
 			}
 		}
 
-		let IteratorLine::BruteForce { state, num_possible_chars } = &self.lines[last_brute_force_line]
+		let IteratorLine::BruteForce { state: _, num_possible_chars } = &self.lines[last_brute_force_line]
 		else { panic!() };
 
 		let step = num_possible_chars / CHUNKS as u8;
@@ -308,7 +315,7 @@ impl SignIterator {
 				continue;
 			}
 
-			let IteratorLine::BruteForce { state, num_possible_chars } = &mut cloned[i].lines[last_brute_force_line]
+			let IteratorLine::BruteForce { state, num_possible_chars: _ } = &mut cloned[i].lines[last_brute_force_line]
 			else { panic!() };
 
 			*state = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 + step * i as u8];
