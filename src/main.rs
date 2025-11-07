@@ -3,13 +3,6 @@
 
 mod sign_iterator;
 
-#[cfg(feature = "filter_dictionary")]
-use std::fs::File;
-#[cfg(feature = "filter_dictionary")]
-use std::io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
-#[cfg(feature = "filter_dictionary")]
-use std::path::Path;
-
 use std::ops::{BitAnd, BitXor};
 use std::sync::atomic::{AtomicI64, Ordering};
 use hexhex::hex;
@@ -19,27 +12,53 @@ use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 use sha2::Digest;
 use crate::sign_iterator::{SignIterator};
 
+/// ****************************************************************************************************************************************
+/// DO NOT CHANGE ANYTHING ABOVE UNLESS YOU KNOW WHAT YOU ARE DOING
+/// YOU HAVE BEEN WARNED
+/// ****************************************************************************************************************************************
+
+
+
+
+/// THESE HASHES ARE THE ACTUAL SOLUTION HASHES FROM THE MOD
+/// DO NOT CHANGE THESE UNLESS THE MOD CODE ITSELF CHANCES
+/// IF THAT HAPPENS IT IS VERY LIKELY THAT THIS SOLVERS ALGORITHM ISN'T VALID ANYMORE EITHER
 static HASHES: &'static [&'static str] = &[
     "41de5c372b0589bbdb80571e87efa95ea9e34b0d74c6005b8eab495b7afd9994",
     "31da6223a100ed348ceb3254ceab67c9cc102cb2a04ac24de0df3ef3479b1036"
 ];
 
+/// The charset that is used for brute forcing.
+/// Add new characters here if you think your answer contains them.
+/// Add characters between the "" symbols.
+/// Keep in mind that each new character adds exponentially more answers that need to be checked
+/// While adding the same character more than once won't crash this algorithm, it will make brute forcing take unnecessarily longer.
 static ALLOWED_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz -#'123456789_,.";
 
+/// Questions that are to be solved by a single answer
+/// To use this, replace one of the None entries by Some("YOUR ANSWER HERE")
+/// Each line corresponds to a question, from 1. to 4.
+/// This supersedes everything else. If you put Some for a question here, putting DICTIONARY_LINES or LINE_OPTIONS for that question won't matter.
 static LINE_CONSTANTS: [Option<&'static str>; 4] = [
-    None,
-    None,
-    None,
-    None
+    None, // 1. Question
+    None, // 2. Question
+    None, // 3. Question
+    None  // 4. Question
 ];
 
+/// Specifies, which questions are to be solved by trying the LINE_OPTIONS below for that question
+/// If you set the true of a line to false, that question will be solved by brute-forcing.
+/// Each line corresponds to a question, from 1. to 4.
+/// You do not need to empty the LINE_OPTIONS for a question to make it be brute-forced.
 static DICTIONARY_LINES: [bool; 4] = [
-    true,
-    true,
-    true,
-    true
+    true, // 1. Question
+    true, // 2. Question
+    true, // 3. Question
+    true  // 4. Question
 ];
 
+/// Specifies the options that are tried for each question
+/// Each line corresponds to a question, from 1. to 4.
 static LINE_OPTIONS: [&[&'static str]; 4] = [
     &["no one", "noone", "nobody", "sound", "air", "scream", "voice", "maxwell", "matter", "the world", "world", "the void", "void", "the echo", "your echo", "half-life scientists", "scientists", "you", "yourself", "mountains", "an echo", "echo"],
     &["atmosphere", "capitalism", "smog", "xrays", "x-ray", "xray", "x-rays", "electromagnetic", "electromagnetism", "infrared", "microwaves", "fallout", "decoy", "belief", "skybox", "faith", "ignorance", "illusion","radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds"],
@@ -47,6 +66,25 @@ static LINE_OPTIONS: [&[&'static str]; 4] = [
     &["lildip", "lil dip", "duchess gambit","duchessgambit", "hoboy03new", "celestium industries", "doctor schrabauer", "DrNostalgia", "ffi-brand cigarette", "soyuz", "obj_tester", "numbernine", "dyx", "minelittlepony", "pisp", "tile.obj_tester.name", "mask man", "maskman", "balls-o-tron", "radon", "isotopes", "orbitals", "electrons", "atoms", "amber", "ambers", "flame", "balefire", "smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire"]
 ];
 
+/// QUESTIONS:
+///
+/// 1: When we scream into the distance, who will answer?
+/// 2: The invisible force, sometimes subtle and sometimes not, covers our eyes directed at the skies.
+/// 3: The fluorescent oscilloscope gives us the passcode of random numbers. Who holds the answers?
+/// 4: Ever revolving, never still, a sight for the patient that reeks of tobacco, dancing perpetually.
+
+
+
+/// HOURS WASTED ON THESE QUESTIONS: 24 and counting
+
+
+
+
+
+/// ****************************************************************************************************************************************
+/// DO NOT CHANGE ANYTHING BELOW UNLESS YOU KNOW WHAT YOU ARE DOING
+/// YOU HAVE BEEN WARNED
+/// ****************************************************************************************************************************************
 
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn generate(current: &[[u8; 15]; 4], allowed_chars: &NonEmpty<u8>) -> [Vec<u8>; 4] {
