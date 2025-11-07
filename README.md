@@ -33,3 +33,5 @@ There are a few cargo features that can configure how the solver works:
 - `combine_dictionary_options`: When this feature is enabled, the solver will combine all the options for all answers into a single answer set and will use that answer set as the new dictionary for every question. This can be usefull, but takes a lot longer to check.
 
 To use these features, run `cargo run --release --features=feature_1,feature2`
+
+See the comments in `./src/main.rs` on how to add possible answers and change how each question is solved.
