@@ -37,3 +37,10 @@ There are a few cargo features that can configure how the solver works:
 To use these features, run `cargo run --release --features=feature_1,feature2`
 
 See the comments in `./src/main.rs` on how to add possible answers and change how each question is solved.
+
+## Riddle Questions:
+
+1. When we scream into the distance, who will answer?
+2. The invisible force, sometimes subtle and sometimes not, covers our eyes directed at the skies.
+3. The fluorescent oscilloscope gives us the passcode of random numbers. Who holds the answers?
+4. Ever revolving, never still, a sight for the patient that reeks of tobacco, dancing perpetually. 
