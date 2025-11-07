@@ -7,6 +7,8 @@ How each question is solved can be configured on a per-question basis.
 
 Sadly, since everything is hashed into a single hash, validating questions separately is not possible so it is impossible to tell which of your answers is wrong.
 
+Sadly, i haven't found the answers yet.
+
 ## Validity
 
 I created this validation logic of this solver by copying the HBM Riddle validation logic into a separate Java project and reimplementing all of the pertinent logic in rust while validating that the rust solution matches the output of the java solution at each validation step.
