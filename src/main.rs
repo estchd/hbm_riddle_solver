@@ -3,12 +3,15 @@
 
 mod sign_iterator;
 
+use std::fs::File;
+use std::io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::ops::{BitAnd, BitXor};
+use std::path::Path;
 use std::sync::atomic::{AtomicI64, Ordering};
 use hexhex::hex;
 use nonempty::NonEmpty;
 use rand::Rng;
-use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelBridge, ParallelIterator};
 use sha2::Digest;
 use crate::sign_iterator::{SignIterator};
 
@@ -17,7 +20,7 @@ static HASHES: &'static [&'static str] = &[
     "31da6223a100ed348ceb3254ceab67c9cc102cb2a04ac24de0df3ef3479b1036"
 ];
 
-static ALLOWED_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz -";
+static ALLOWED_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz -#'123456789_,.";
 
 static LINE_CONSTANTS: [Option<&'static str>; 4] = [
     None,
@@ -26,15 +29,17 @@ static LINE_CONSTANTS: [Option<&'static str>; 4] = [
     None
 ];
 
+static ALL_LINE_OPTIONS: &'static [&'static str] = &["the void", "void", "popbub", "hoofington", "sharon", "flim flam industries", "enolagay", "enola gay", "lildip", "lil dip", "duchess gambit","duchessgambit", "hoboy03new", "celestium industries", "free electron laser", "sound", "air", "scream", "voice", "screen", "fourier", "ears", "ear", "music", "sound", "current", "voltage", "separation of isotopes by laser exitation", "chaos", "starcontrol", "radar", "numbernine", "dyx", "minelittlepony", "pisp", "tile.obj_tester.name", "exposure chamber", "fel", "free electron laser", "maxwell", "atmosphere", "Doctor Schrabauer", "DrNostalgia", "ffi-brand cigarette", "matter", "the world", "world", "mask man", "maskman", "balls-o-tron", "radon", "isotopes", "orbitals", "electrons", "atoms", "amber", "ambers", "flame", "balefire", "smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire", "who", "java", "the author", "author", "the bobcat", "bob", "electrons", "photons", "decoder", "time", "seed", "hash", "you", "entropy", "operator", "nature", "scientist", "the observer", "observer", "euphemia li britannia", "digamma", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil", "capitalism", "smog", "xrays", "x-ray", "xray", "x-rays", "electromagnetic", "electromagnetism", "infrared", "microwaves", "fallout", "decoy", "belief", "skybox", "faith", "ignorance", "illusion","radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds", "half-life scientists", "scientists", "you", "yourself", "mountains", "an echo", "echo", ];
+
 static LINE_OPTIONS: [Option<&[&'static str]>; 4] = [
-    None,
-    //Some(&["you", "yourself", "mountains", "an echo", "echo"]),
     //None,
-    Some(&["radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds"]),
+    Some(&["half-life scientists", "scientists", "you", "yourself", "mountains", "an echo", "echo"]),
     //None,
-    Some(&["you", "entropy", "operator", "nature", "scientist", "the observer", "observer", "euphemia li britannia", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil"]),
+    Some(&["capitalism", "smog", "xrays", "x-ray", "xray", "x-rays", "electromagnetic", "electromagnetism", "infrared", "microwaves", "fallout", "decoy", "belief", "skybox", "faith", "ignorance", "illusion","radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds"]),
     //None,
-    Some(&["smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire"])
+    Some(&["who", "java", "the author", "author", "the bobcat", "bob", "electrons", "photons", "decoder", "time", "seed", "hash", "you", "entropy", "operator", "nature", "scientist", "the observer", "observer", "euphemia li britannia", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil"]),
+    //None,
+    Some(&["mask man", "maskman", "balls-o-tron", "radon", "isotopes", "orbitals", "electrons", "atoms", "amber", "ambers", "flame", "balefire", "smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire"])
 ];
 
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
@@ -61,8 +66,66 @@ fn generate(current: &[[u8; 15]; 4], allowed_chars: &NonEmpty<u8>) -> [Vec<u8>; 
     strings
 }
 
-#[cfg_attr(feature = "hotpath", hotpath::main(percentiles = [100]))]
+fn filter_dictionary<A: AsRef<Path>, B: AsRef<Path>>(input_path: A, output_path: B) {
+    let allowed_chars: NonEmpty<char> = NonEmpty::from_vec(ALLOWED_CHARS
+        .chars()
+        .collect::<Vec<char>>()).unwrap();
+
+    let mut input = File::open(input_path.as_ref()).unwrap();
+
+    let end = input.seek(SeekFrom::End(0)).unwrap();
+    input.seek(SeekFrom::Start(0)).unwrap();
+
+    let mut data: Vec<u8> = Vec::with_capacity(end as usize);
+
+    let actual_size = input.read_to_end(&mut data).unwrap();
+
+    data.truncate(actual_size);
+
+    println!("loaded");
+
+    let input = BufReader::new(data.as_slice());
+
+    let lines = input.lines().count();
+
+    println!("lines: {}", lines);
+
+    let input = BufReader::new(data.as_slice());
+
+    let mut output = BufWriter::new(File::create(output_path).unwrap());
+
+    let mut index = 0;
+
+    for line in input.lines() {
+        let line = line.unwrap();
+
+        index += 1;
+
+        if index % 10000000 == 0 {
+            println!("{}", index);
+        }
+
+        let line = line.chars().take(15);
+
+        for char in line.clone() {
+            if !allowed_chars.contains(&char) {
+                continue;
+            }
+        }
+
+        output.write_fmt(format_args!("{}\n", line.collect::<String>())).unwrap();
+    }
+}
+
+#[cfg_attr(feature = "hotpath", hotpath::main(percentiles = [100], timeout = 1000))]
 fn main() {
+    #[cfg(feature = "filter_dictionary")]
+    {
+        filter_dictionary("length_dictionary.txt", "filtered_dictionary.txt");
+
+        return;
+    }
+
     let allowed_chars: NonEmpty<char> = NonEmpty::from_vec(ALLOWED_CHARS
         .chars()
         .collect::<Vec<char>>()).unwrap();
@@ -92,10 +155,15 @@ fn main() {
         })
         .collect::<Vec<Vec<u8>>>();
 
-    let sign_iterator = SignIterator::from_readable_config(allowed_chars, &LINE_OPTIONS, &LINE_CONSTANTS);
+    let sign_iterator = SignIterator::from_readable_config(allowed_chars, &[None; 4], &[None; 4]);
+    //let sign_iterator = SignIterator::from_readable_config(allowed_chars, &options, &LINE_CONSTANTS);
 
-    let result = sign_iterator.par_bridge().into_par_iter().find_first(|sign_indices| {
-        check_solution(sign_indices, &allowed_chars_bytes, &possible_hashes, &char_random_hashes)
+    let iterators = sign_iterator.split::<16>();
+
+    let result = iterators.into_par_iter().find_map_first(|mut iterator| {
+            iterator.find(|sign_indices| {
+            check_solution(sign_indices, &allowed_chars_bytes, &possible_hashes, &char_random_hashes)
+        })
     });
 
     if let Some(result) = result {

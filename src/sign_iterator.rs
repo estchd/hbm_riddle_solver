@@ -143,28 +143,17 @@ impl IteratorLine {
 		}
 	}
 
-	fn iterate(&mut self) -> bool {
+	fn iterate(&mut self, brute_force_index: u8) -> bool {
 		match self {
 			IteratorLine::BruteForce { state, num_possible_chars } => {
-				let mut index = 0;
+				state[brute_force_index as usize] = state[brute_force_index as usize] + 1;
 
-				loop {
-					state[index] = state[index] + 1;
-
-					if state[index] > *num_possible_chars {
-						if index == 15 {
-							*state = DEFAULT_BRUTE_FORCE_STATE;
-							return true;
-						}
-						else {
-							state[index] = 1;
-							index += 1;
-						}
-					}
-					else {
-						return false;
-					}
+				if state[brute_force_index as usize] > *num_possible_chars {
+					state[brute_force_index as usize] = 1;
+					return true;
 				}
+
+				false
 			},
 			IteratorLine::Dictionary { current_index, possible_entries } => {
 				*current_index = *current_index + 1;
@@ -183,6 +172,7 @@ impl IteratorLine {
 	}
 }
 
+#[derive(Clone, Debug)]
 pub struct SignIterator {
 	lines: [IteratorLine; 4],
 	initial: bool,
@@ -245,7 +235,7 @@ impl SignIterator {
 
 			for i in 0..4 {
 				if self.lines[i].is_dictionary() {
-					last_dictionary_line_finished = self.lines[i].iterate();
+					last_dictionary_line_finished = self.lines[i].iterate(0);
 
 					if !last_dictionary_line_finished {
 						break;
@@ -262,9 +252,11 @@ impl SignIterator {
 			}
 		}
 
-		for i in 0..4 {
-			if self.lines[i].is_brute_force() && !self.lines[i].iterate() {
-				return false;
+		for l in 0..15 {
+			for i in 0..4 {
+				if self.lines[i].is_brute_force() && !self.lines[i].iterate(l) {
+					return false;
+				}
 			}
 		}
 
@@ -278,6 +270,51 @@ impl SignIterator {
 			self.lines[2].to_line(),
 			self.lines[3].to_line(),
 		]
+	}
+
+	pub fn split<const CHUNKS: usize>(self) -> [Self; CHUNKS] {
+		let mut cloned: Vec<Self> = Vec::with_capacity(CHUNKS);
+
+		for _ in 0..CHUNKS {
+			cloned.push(self.clone());
+		}
+
+		let mut cloned: [Self; CHUNKS] = cloned.try_into().unwrap();
+
+		if self.only_constant {
+			return cloned;
+		}
+
+		if self.only_dictionary_or_constant {
+			todo!()
+		}
+
+		let mut last_brute_force_line = 0;
+
+		for i in (0..4).rev() {
+			if self.lines[i].is_brute_force() {
+				last_brute_force_line = i;
+				break;
+			}
+		}
+
+		let IteratorLine::BruteForce { state, num_possible_chars } = &self.lines[last_brute_force_line]
+		else { panic!() };
+
+		let step = num_possible_chars / CHUNKS as u8;
+
+		for i in 0..CHUNKS {
+			if i == 0 {
+				continue;
+			}
+
+			let IteratorLine::BruteForce { state, num_possible_chars } = &mut cloned[i].lines[last_brute_force_line]
+			else { panic!() };
+
+			*state = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 + step * i as u8];
+		}
+
+		cloned
 	}
 }
 
