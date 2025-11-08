@@ -1,6 +1,3 @@
-#![feature(integer_atomics)]
-#![feature(duration_millis_float)]
-
 mod sign_iterator;
 
 use std::ops::{BitAnd, BitXor};
@@ -60,10 +57,10 @@ static DICTIONARY_LINES: [bool; 4] = [
 /// Specifies the options that are tried for each question
 /// Each line corresponds to a question, from 1. to 4.
 static LINE_OPTIONS: [&[&'static str]; 4] = [
-    &["no one", "noone", "nobody", "sound", "air", "scream", "voice", "maxwell", "matter", "the world", "world", "the void", "void", "the echo", "your echo", "half-life scientists", "scientists", "you", "yourself", "mountains", "an echo", "echo"],
-    &["atmosphere", "capitalism", "smog", "xrays", "x-ray", "xray", "x-rays", "electromagnetic", "electromagnetism", "infrared", "microwaves", "fallout", "decoy", "belief", "skybox", "faith", "ignorance", "illusion","radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds"],
-    &["screen", "fourier", "ears", "ear", "music", "sound", "current", "voltage", "separation of isotopes by laser exitation", "chaos", "starcontrol", "radar", "exposure chamber", "fel", "free electron laser", "who", "java", "the author", "author", "the bobcat", "bob", "electrons", "photons", "decoder", "time", "seed", "hash", "you", "entropy", "operator", "nature", "scientist", "the observer", "observer", "euphemia li britannia", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil"],
-    &["lildip", "lil dip", "duchess gambit","duchessgambit", "hoboy03new", "celestium industries", "doctor schrabauer", "DrNostalgia", "ffi-brand cigarette", "soyuz", "obj_tester", "numbernine", "dyx", "minelittlepony", "pisp", "tile.obj_tester.name", "mask man", "maskman", "balls-o-tron", "radon", "isotopes", "orbitals", "electrons", "atoms", "amber", "ambers", "flame", "balefire", "smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire"]
+    &[":3", "ough", "digamma", "no one", "noone", "nobody", "sound", "air", "scream", "voice", "maxwell", "matter", "the world", "world", "the void", "void", "the echo", "your echo", "half-life scientists", "scientists", "you", "yourself", "mountains", "an echo", "echo"],
+    &["fingle", "atmosphere", "capitalism", "smog", "xrays", "x-ray", "xray", "x-rays", "electromagnetic", "electromagnetism", "infrared", "microwaves", "fallout", "decoy", "belief", "skybox", "faith", "ignorance", "illusion","radio", "noise", "smog", "glare", "skyglow", "light pollution", "sunlight", "sun-rays", "wind", "uv-ray", "uv ray", "uv-rays", "uv rays", "gravity", "radiation", "clouds"],
+    &["two", "screen", "fourier", "ears", "ear", "music", "sound", "current", "voltage", "separation of isotopes by laser exitation", "chaos", "starcontrol", "radar", "exposure chamber", "fel", "free electron laser", "who", "java", "the author", "author", "the bobcat", "bob", "electrons", "photons", "decoder", "time", "seed", "hash", "you", "entropy", "operator", "nature", "scientist", "the observer", "observer", "euphemia li britannia", "digamma crystal", "digamma laser crystal", "electricity", "current", "silex", "murky anvil"],
+    &["twilight", "lildip", "lil dip", "duchess gambit","duchessgambit", "hoboy03new", "celestium industries", "doctor schrabauer", "DrNostalgia", "ffi-brand cigarette", "soyuz", "obj_tester", "numbernine", "dyx", "minelittlepony", "pisp", "tile.obj_tester.name", "mask man", "maskman", "balls-o-tron", "radon", "isotopes", "orbitals", "electrons", "atoms", "amber", "ambers", "flame", "balefire", "smoke ring", "cigarette smoke", "cigar smoke", "tobacco smoke", "smoke", "fire"]
 ];
 
 /// QUESTIONS:
